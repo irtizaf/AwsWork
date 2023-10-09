@@ -1,0 +1,66 @@
+import * as cdk from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+
+class LambdaLayerStack extends cdk.Stack {
+  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    // Create an S3 bucket to store the Lambda Layer
+    const bucket = new s3.Bucket(this, 'LayerBucket', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // To Remove all the policies from the S3 Bucket
+    });
+
+    // Create the Lambda Layer and add it to the bucket
+    const layer = new lambda.LayerVersion(this, 'MyLayer', {
+      code: lambda.Code.fromAsset('path/to/your-layer'), // Adjust the path 'layer/lambdalayer' and in lambda layer nodejs folder resides.
+      compatibleRuntimes: [lambda.Runtime.NODEJS_18_X], // Specify your runtime
+    });
+
+    layer.addPermission('LayerPermission', {
+      principal: new lambda.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
+    layer.grantRead(new lambda.ServicePrincipal('lambda.amazonaws.com'));
+    layer.publish();
+
+    // Output the S3 bucket name and Lambda Layer ARN
+    new cdk.CfnOutput(this, 'LayerBucketName', {
+      value: bucket.bucketName,
+    });
+
+    new cdk.CfnOutput(this, 'LayerArn', {
+      value: layer.layerVersionArn,
+    });
+  }
+}
+
+const app = new cdk.App();
+new LambdaLayerStack(app, 'LambdaLayerStack');
+
+===========================================================================================================
+
+import * as cdk from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+
+class AnotherStack extends cdk.Stack {
+  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    // Import the S3 bucket name and Lambda Layer ARN from the output of the LambdaLayerStack
+    const layerBucketName = cdk.Fn.importValue('LambdaLayerStack-LayerBucketName');
+    const layerArn = cdk.Fn.importValue('LambdaLayerStack-LayerArn');
+
+    // Create a Lambda function that uses the imported Lambda Layer
+    const myFunction = new lambda.Function(this, 'MyFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('path/to/lambda-code'), // Adjust the path of the code
+      layers: [lambda.LayerVersion.fromLayerVersionArn(this, 'MyLayerImport', layerArn)],
+    });
+  }
+}
+
+const app = new cdk.App();
+new AnotherStack(app, 'AnotherStack');

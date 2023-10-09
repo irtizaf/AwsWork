@@ -1,0 +1,15 @@
+{
+  "name": "npx-cdk-nextjs-boilerplate",
+  "version": "1.5.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "npx-cdk-nextjs-boilerplate": "bin/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
